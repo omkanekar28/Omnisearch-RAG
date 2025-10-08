@@ -1,0 +1,283 @@
+═══════════════════════════════════════════════════════════════════════════════
+                        OMNISEARCH-RAG SYSTEM FLOW
+═══════════════════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          INGESTION PIPELINE                                  │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+[User Uploads Files]
+        │
+        ├──→ PDF files (.pdf)
+        ├──→ Images (.jpg, .png)
+        ├──→ Text files (.txt, .md)
+        └──→ URLs (web links)
+        │
+        ↓
+┌───────────────────────┐
+│   File Type Router    │  ← Determines which processor to use
+└───────────────────────┘
+        │
+        ├──────────────┬──────────────┬──────────────┬──────────────┐
+        ↓              ↓              ↓              ↓              ↓
+┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐
+│PDF Processor│  │Image Process│  │Text Processor│  │Web Scraper  │
+│(PyMuPDF4LLM)│  │(Tesseract)  │  │(Plain read) │  │(Beautiful-  │
+│             │  │             │  │             │  │ Soup/Scrapy)│
+└─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘
+        │              │              │              │
+        └──────────────┴──────────────┴──────────────┘
+                       │
+                       ↓
+        ┌──────────────────────────┐
+        │   Extracted Raw Text     │
+        │   + Metadata (source,    │
+        │     page, timestamp)     │
+        └──────────────────────────┘
+                       │
+                       ↓
+        ┌──────────────────────────┐
+        │   Text Preprocessing     │
+        │   - Clean whitespace     │
+        │   - Remove special chars │
+        │   - Normalize text       │
+        └──────────────────────────┘
+                       │
+                       ↓
+        ┌──────────────────────────┐
+        │    Text Chunking         │
+        │  - Semantic chunking     │
+        │  - Fixed-size chunks     │
+        │  - With overlap (10-20%) │
+        │  - Preserve metadata     │
+        └──────────────────────────┘
+                       │
+                       ↓
+        ┌──────────────────────────┐
+        │    Text Chunks           │
+        │  [Chunk 1, Chunk 2, ...] │
+        │  Each with metadata      │
+        └──────────────────────────┘
+                       │
+                       ↓
+        ┌──────────────────────────┐
+        │  Embedding Manager       │
+        │  - Load embedding model  │
+        │  - Generate vectors      │
+        │  - Batch processing      │
+        └──────────────────────────┘
+                       │
+                       ↓
+        ┌──────────────────────────┐
+        │   Vector Embeddings      │
+        │   [768-dim vectors]      │
+        └──────────────────────────┘
+                       │
+                       ↓
+        ┌──────────────────────────┐
+        │   FAISS Manager          │
+        │   - Create/Load index    │
+        │   - Add vectors          │
+        │   - Save to disk         │
+        └──────────────────────────┘
+                       │
+                       ↓
+        ┌──────────────────────────┐
+        │   FAISS Vector Store     │
+        │   (data/faiss_stores/    │
+        │    hr_portal/ or         │
+        │    ai_server_logs/)      │
+        └──────────────────────────┘
+
+
+═══════════════════════════════════════════════════════════════════════════════
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           QUERY PIPELINE                                     │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+[User Enters Query]
+   "What is the vacation policy?"
+        │
+        ↓
+┌───────────────────────┐
+│  Query Preprocessing  │
+│  - Clean query text   │
+│  - Extract intent     │
+│  - Detect task type   │
+│    (QA/Summary/etc)   │
+└───────────────────────┘
+        │
+        ↓
+┌───────────────────────┐
+│  Select FAISS Store   │
+│  (hr_portal,          │
+│   ai_server_logs,     │
+│   general, etc.)      │
+└───────────────────────┘
+        │
+        ↓
+┌───────────────────────┐
+│  Embedding Manager    │
+│  - Embed user query   │
+│  - Generate vector    │
+└───────────────────────┘
+        │
+        ↓
+┌───────────────────────┐
+│   Query Vector        │
+│   [768-dim vector]    │
+└───────────────────────┘
+        │
+        ↓
+┌───────────────────────┐
+│   FAISS Retriever     │
+│   - Similarity search │
+│   - Fetch top-k docs  │
+│   - Filter by metadata│
+└───────────────────────┘
+        │
+        ↓
+┌───────────────────────┐
+│  Retrieved Chunks     │
+│  [Doc1, Doc2, ..., Dk]│
+│  with similarity scores│
+└───────────────────────┘
+        │
+        ↓
+┌───────────────────────┐
+│  Top Relevant Docs    │
+│  (sorted by relevance)│
+└───────────────────────┘
+        │
+        ↓
+┌───────────────────────┐
+│  Context Builder      │
+│  - Combine chunks     │
+│  - Add source info    │
+│  - Format for LLM     │
+└───────────────────────┘
+        │
+        ↓
+┌───────────────────────┐
+│  Formatted Context    │
+│  "Based on these docs:│
+│   Doc1: ...          │
+│   Doc2: ...          │
+│   Answer the question"│
+└───────────────────────┘
+        │
+        ↓
+┌───────────────────────┐
+│  Prompt Template      │
+│  - QA template        │
+│  - Summary template   │
+│  - Custom templates   │
+└───────────────────────┘
+        │
+        ↓
+┌───────────────────────┐
+│  LLM Manager          │
+│  - Load LLM (GPT/     │
+│    Claude/Llama)      │
+│  - Generate response  │
+│  - Stream output      │
+└───────────────────────┘
+        │
+        ↓
+┌───────────────────────┐
+│  Generated Answer     │
+│  + Source Citations   │
+│  + Confidence Score   │
+└───────────────────────┘
+        │
+        ↓
+┌───────────────────────┐
+│  Response Formatter   │
+│  - Add citations      │
+│  - Format markdown    │
+│  - Include metadata   │
+└───────────────────────┘
+        │
+        ↓
+[Return to User]
+   "According to the HR 
+    policy document (page 5),
+    employees get 20 days 
+    vacation per year..."
+
+
+═══════════════════════════════════════════════════════════════════════════════
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        SYSTEM ARCHITECTURE                                   │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────┐
+│   User Layer    │
+└─────────────────┘
+        │
+        ├──→ Web UI (Streamlit/Gradio)
+        ├──→ REST API (FastAPI)
+        └──→ CLI Scripts
+        │
+        ↓
+┌─────────────────────────────────────┐
+│         Pipeline Layer              │
+│  ┌─────────────────────────────┐   │
+│  │  Ingestion Pipeline         │   │
+│  └─────────────────────────────┘   │
+│  ┌─────────────────────────────┐   │
+│  │  Query Pipeline             │   │
+│  └─────────────────────────────┘   │
+└─────────────────────────────────────┘
+        │
+        ↓
+┌─────────────────────────────────────┐
+│      Component Layer                │
+│  ┌──────────┐  ┌──────────┐        │
+│  │Processors│  │Chunking  │        │
+│  └──────────┘  └──────────┘        │
+│  ┌──────────┐  ┌──────────┐        │
+│  │Embeddings│  │Retrieval │        │
+│  └──────────┘  └──────────┘        │
+│  ┌──────────┐  ┌──────────┐        │
+│  │VectorStore│ │LLM Manager│       │
+│  └──────────┘  └──────────┘        │
+└─────────────────────────────────────┘
+        │
+        ↓
+┌─────────────────────────────────────┐
+│       Storage Layer                 │
+│  ┌────────────────────────┐         │
+│  │  FAISS Indexes         │         │
+│  │  - hr_portal/          │         │
+│  │  - ai_server_logs/     │         │
+│  │  - general/            │         │
+│  └────────────────────────┘         │
+│  ┌────────────────────────┐         │
+│  │  Raw Data Storage      │         │
+│  │  - PDFs, Images, etc   │         │
+│  └────────────────────────┘         │
+└─────────────────────────────────────┘
+
+
+═══════════════════════════════════════════════════════════════════════════════
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    DATA FLOW SUMMARY                                         │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+INGESTION:
+Files → Extract Text → Clean → Chunk → Embed → Store in FAISS
+
+QUERYING:
+Query → Embed → Search FAISS → Retrieve Docs → Build Context → LLM → Answer
+
+COMPONENTS INTERACTION:
+┌────────┐      ┌─────────┐      ┌──────────┐      ┌─────┐
+│ User   │ ←──→ │Pipeline │ ←──→ │Components│ ←──→ │Store│
+└────────┘      └─────────┘      └──────────┘      └─────┘
