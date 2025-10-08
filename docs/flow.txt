@@ -9,6 +9,7 @@
 [User Uploads Files]
         │
         ├──→ PDF files (.pdf)
+        ├──→ Excel files (.xlsx, .xls, .csv)
         ├──→ Images (.jpg, .png)
         ├──→ Text files (.txt, .md)
         └──→ URLs (web links)
@@ -18,21 +19,36 @@
 │   File Type Router    │  ← Determines which processor to use
 └───────────────────────┘
         │
-        ├──────────────┬──────────────┬──────────────┬──────────────┐
-        ↓              ↓              ↓              ↓              ↓
-┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐
-│PDF Processor│  │Image Process│  │Text Processor│  │Web Scraper  │
-│(PyMuPDF4LLM)│  │(Tesseract)  │  │(Plain read) │  │(Beautiful-  │
-│             │  │             │  │             │  │ Soup/Scrapy)│
-└─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘
-        │              │              │              │
-        └──────────────┴──────────────┴──────────────┘
+        ├──────────┬──────────┬──────────┬──────────┬──────────┐
+        ↓          ↓          ↓          ↓          ↓          ↓
+┌───────────┐ ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌───────────┐
+│PDF Process│ │Excel Proc │ │Image Proc │ │Text Proc  │ │Web Scraper│
+│(PyMuPDF   │ │(Pandas/   │ │(Tesseract)│ │(Plain read│ │(Beautiful │
+│ 4LLM)     │ │ OpenPyXL) │ │           │ │)          │ │ Soup)     │
+│           │ │           │ │           │ │           │ │           │
+└───────────┘ └───────────┘ └───────────┘ └───────────┘ └───────────┘
+        │          │          │          │          │
+        │          ↓          │          │          │
+        │  ┌───────────────┐ │          │          │
+        │  │Excel Processor│ │          │          │
+        │  │  Handles:     │ │          │          │
+        │  │- Multiple     │ │          │          │
+        │  │  sheets       │ │          │          │
+        │  │- Column       │ │          │          │
+        │  │  headers      │ │          │          │
+        │  │- Data types   │ │          │          │
+        │  │- Cell refs    │ │          │          │
+        │  │- Formulas     │ │          │          │
+        │  └───────────────┘ │          │          │
+        │          │          │          │          │
+        └──────────┴──────────┴──────────┴──────────┘
                        │
                        ↓
         ┌──────────────────────────┐
         │   Extracted Raw Text     │
         │   + Metadata (source,    │
-        │     page, timestamp)     │
+        │     page/sheet, timestamp│
+        │     column names, etc)   │
         └──────────────────────────┘
                        │
                        ↓
@@ -41,22 +57,38 @@
         │   - Clean whitespace     │
         │   - Remove special chars │
         │   - Normalize text       │
+        │   - Preserve table struct│
         └──────────────────────────┘
                        │
                        ↓
         ┌──────────────────────────┐
         │    Text Chunking         │
-        │  - Semantic chunking     │
-        │  - Fixed-size chunks     │
-        │  - With overlap (10-20%) │
-        │  - Preserve metadata     │
+        │  ┌────────────────────┐  │
+        │  │ Regular Chunking   │  │
+        │  │ - Semantic chunking│  │
+        │  │ - Fixed-size chunks│  │
+        │  │ - With overlap     │  │
+        │  └────────────────────┘  │
+        │  ┌────────────────────┐  │
+        │  │ Tabular Chunking   │  │
+        │  │ - Row-based chunks │  │
+        │  │ - Sheet-based chunks│ │
+        │  │ - Preserve headers │  │
+        │  │ - Include context  │  │
+        │  └────────────────────┘  │
         └──────────────────────────┘
                        │
                        ↓
         ┌──────────────────────────┐
         │    Text Chunks           │
         │  [Chunk 1, Chunk 2, ...] │
-        │  Each with metadata      │
+        │  Each with metadata:     │
+        │  - Source file           │
+        │  - Sheet name (Excel)    │
+        │  - Column names (Excel)  │
+        │  - Row numbers (Excel)   │
+        │  - Page (PDF)            │
+        │  - Timestamp             │
         └──────────────────────────┘
                        │
                        ↓
@@ -65,6 +97,7 @@
         │  - Load embedding model  │
         │  - Generate vectors      │
         │  - Batch processing      │
+        │  - Handle structured data│
         └──────────────────────────┘
                        │
                        ↓
@@ -86,7 +119,8 @@
         │   FAISS Vector Store     │
         │   (data/faiss_stores/    │
         │    hr_portal/ or         │
-        │    ai_server_logs/)      │
+        │    ai_server_logs/ or    │
+        │    financial_data/)      │
         └──────────────────────────┘
 
 
@@ -98,7 +132,7 @@
 └─────────────────────────────────────────────────────────────────────────────┘
 
 [User Enters Query]
-   "What is the vacation policy?"
+   "What were Q3 sales figures?" or "What is the vacation policy?"
         │
         ↓
 ┌───────────────────────┐
@@ -106,7 +140,10 @@
 │  - Clean query text   │
 │  - Extract intent     │
 │  - Detect task type   │
-│    (QA/Summary/etc)   │
+│    (QA/Summary/       │
+│     TableQuery)       │
+│  - Identify if query  │
+│    needs tabular data │
 └───────────────────────┘
         │
         ↓
@@ -114,6 +151,7 @@
 │  Select FAISS Store   │
 │  (hr_portal,          │
 │   ai_server_logs,     │
+│   financial_data,     │
 │   general, etc.)      │
 └───────────────────────┘
         │
@@ -136,6 +174,8 @@
 │   - Similarity search │
 │   - Fetch top-k docs  │
 │   - Filter by metadata│
+│   - Prioritize table  │
+│     data if needed    │
 └───────────────────────┘
         │
         ↓
@@ -143,6 +183,15 @@
 │  Retrieved Chunks     │
 │  [Doc1, Doc2, ..., Dk]│
 │  with similarity scores│
+│  + table metadata     │
+└───────────────────────┘
+        │
+        ↓
+┌───────────────────────┐
+│  Optional: Re-ranker  │
+│  - Boost tabular data │
+│    for numerical qs   │
+│  - Re-score results   │
 └───────────────────────┘
         │
         ↓
@@ -156,6 +205,8 @@
 │  Context Builder      │
 │  - Combine chunks     │
 │  - Add source info    │
+│  - Format tables      │
+│  - Preserve structure │
 │  - Format for LLM     │
 └───────────────────────┘
         │
@@ -163,8 +214,10 @@
 ┌───────────────────────┐
 │  Formatted Context    │
 │  "Based on these docs:│
-│   Doc1: ...          │
-│   Doc2: ...          │
+│   Doc1 (PDF p.5): ... │
+│   Doc2 (Sheet1):      │
+│   | Name | Sales |    │
+│   | John | 5000  |    │
 │   Answer the question"│
 └───────────────────────┘
         │
@@ -173,6 +226,7 @@
 │  Prompt Template      │
 │  - QA template        │
 │  - Summary template   │
+│  - Table QA template  │
 │  - Custom templates   │
 └───────────────────────┘
         │
@@ -183,6 +237,7 @@
 │    Claude/Llama)      │
 │  - Generate response  │
 │  - Stream output      │
+│  - Parse tables       │
 └───────────────────────┘
         │
         ↓
@@ -190,6 +245,7 @@
 │  Generated Answer     │
 │  + Source Citations   │
 │  + Confidence Score   │
+│  + Table refs         │
 └───────────────────────┘
         │
         ↓
@@ -197,22 +253,107 @@
 │  Response Formatter   │
 │  - Add citations      │
 │  - Format markdown    │
+│  - Format tables      │
 │  - Include metadata   │
 └───────────────────────┘
         │
         ↓
 [Return to User]
-   "According to the HR 
-    policy document (page 5),
-    employees get 20 days 
-    vacation per year..."
+   "According to Q3_Sales.xlsx
+    (Sheet: Regional, Row 15-20),
+    total sales were $250K..."
 
 
 ═══════════════════════════════════════════════════════════════════════════════
 
 
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                        SYSTEM ARCHITECTURE                                   │
+│                    EXCEL-SPECIFIC PROCESSING FLOW                            │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+[Excel File Upload]
+        │
+        ↓
+┌───────────────────────┐
+│  Excel Processor      │
+│  - Detect file type   │
+│    (.xlsx/.xls/.csv)  │
+│  - Load with pandas/  │
+│    openpyxl           │
+└───────────────────────┘
+        │
+        ↓
+┌───────────────────────┐
+│  Sheet Iterator       │
+│  For each sheet:      │
+└───────────────────────┘
+        │
+        ├─→ Extract sheet name
+        ├─→ Extract column headers
+        ├─→ Extract data types
+        ├─→ Identify key columns
+        ├─→ Handle merged cells
+        ├─→ Extract formulas (optional)
+        │
+        ↓
+┌───────────────────────┐
+│  Tabular Chunker      │
+│  Strategy selection:  │
+│                       │
+│  Option 1: Row-based  │
+│  - Group 5-10 rows    │
+│  - Include headers    │
+│  - Preserve context   │
+│                       │
+│  Option 2: Sheet-based│
+│  - Entire sheet as    │
+│    one chunk (small)  │
+│                       │
+│  Option 3: Semantic   │
+│  - Group by content   │
+│  - Related rows       │
+└───────────────────────┘
+        │
+        ↓
+┌───────────────────────┐
+│  Text Representation  │
+│  Format options:      │
+│                       │
+│  1. Markdown table:   │
+│  | Col1 | Col2 |      │
+│  |------|------|      │
+│  | Val1 | Val2 |      │
+│                       │
+│  2. Natural language: │
+│  "In the Sales sheet, │
+│   John had 5000 sales"│
+│                       │
+│  3. JSON-like:        │
+│  {"Name": "John",     │
+│   "Sales": 5000}      │
+└───────────────────────┘
+        │
+        ↓
+┌───────────────────────┐
+│  Add Rich Metadata    │
+│  - Filename           │
+│  - Sheet name         │
+│  - Column names       │
+│  - Row numbers        │
+│  - Data types         │
+│  - Upload timestamp   │
+│  - File hash          │
+└───────────────────────┘
+        │
+        ↓
+[Continue to Embedding]
+
+
+═══════════════════════════════════════════════════════════════════════════════
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        SYSTEM ARCHITECTURE (UPDATED)                         │
 └─────────────────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────┐
@@ -228,25 +369,34 @@
 │         Pipeline Layer              │
 │  ┌─────────────────────────────┐   │
 │  │  Ingestion Pipeline         │   │
+│  │  - Multi-format support     │   │
 │  └─────────────────────────────┘   │
 │  ┌─────────────────────────────┐   │
 │  │  Query Pipeline             │   │
+│  │  - Table-aware retrieval    │   │
 │  └─────────────────────────────┘   │
 └─────────────────────────────────────┘
         │
         ↓
-┌─────────────────────────────────────┐
-│      Component Layer                │
+┌────────────────────────────────────┐
+│      Component Layer               │
 │  ┌──────────┐  ┌──────────┐        │
 │  │Processors│  │Chunking  │        │
+│  │- PDF     │  │- Text    │        │
+│  │- Excel   │  │- Tabular  │       │
+│  │- Image   │  │- Semantic│        │
+│  │- Text    │  │          │        │
+│  │- Web     │  │          │        │
 │  └──────────┘  └──────────┘        │
 │  ┌──────────┐  ┌──────────┐        │
 │  │Embeddings│  │Retrieval │        │
+│  │- Text    │  │- Standard│        │
+│  │- Table   │  │- Hybrid  │        │
 │  └──────────┘  └──────────┘        │
 │  ┌──────────┐  ┌──────────┐        │
 │  │VectorStore│ │LLM Manager│       │
 │  └──────────┘  └──────────┘        │
-└─────────────────────────────────────┘
+└────────────────────────────────────┘
         │
         ↓
 ┌─────────────────────────────────────┐
@@ -255,11 +405,15 @@
 │  │  FAISS Indexes         │         │
 │  │  - hr_portal/          │         │
 │  │  - ai_server_logs/     │         │
+│  │  - financial_data/     │         │
 │  │  - general/            │         │
 │  └────────────────────────┘         │
 │  ┌────────────────────────┐         │
 │  │  Raw Data Storage      │         │
-│  │  - PDFs, Images, etc   │         │
+│  │  - PDFs                │         │
+│  │  - Excel files         │         │
+│  │  - Images              │         │
+│  │  - Text files          │         │
 │  └────────────────────────┘         │
 └─────────────────────────────────────┘
 
@@ -268,16 +422,30 @@
 
 
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                    DATA FLOW SUMMARY                                         │
+│                    DATA FLOW SUMMARY (UPDATED)                               │
 └─────────────────────────────────────────────────────────────────────────────┘
 
 INGESTION:
-Files → Extract Text → Clean → Chunk → Embed → Store in FAISS
+Files (PDF/Excel/Image/Text/Web) → Extract Text/Data → Clean → 
+Chunk (Text/Tabular) → Embed → Store in FAISS
 
 QUERYING:
-Query → Embed → Search FAISS → Retrieve Docs → Build Context → LLM → Answer
+Query → Detect Type → Embed → Search FAISS → Retrieve Docs → 
+Build Context (with tables) → LLM → Answer (with citations)
+
+EXCEL SPECIFIC:
+Excel → Parse Sheets → Extract Tables → Chunk by Rows/Sheets → 
+Add Metadata → Embed → Store → Query with Table Context
 
 COMPONENTS INTERACTION:
 ┌────────┐      ┌─────────┐      ┌──────────┐      ┌─────┐
 │ User   │ ←──→ │Pipeline │ ←──→ │Components│ ←──→ │Store│
 └────────┘      └─────────┘      └──────────┘      └─────┘
+                                       ↓
+                                 ┌──────────┐
+                                 │  Excel   │
+                                 │Processor │
+                                 └──────────┘
+
+
+═══════════════════════════════════════════════════════════════════════════════

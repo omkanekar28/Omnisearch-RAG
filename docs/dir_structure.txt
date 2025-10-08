@@ -5,6 +5,7 @@ langchain-rag-system/
 ├── data/
 │   ├── raw/                          # Upload raw files here
 │   │   ├── pdfs/
+│   │   ├── excel/
 │   │   ├── images/
 │   │   ├── text/
 │   │   └── urls.txt
@@ -21,6 +22,7 @@ langchain-rag-system/
 │   ├── ingestion/
 │   │   ├── __init__.py
 │   │   ├── pdf_processor.py          # PyMuPDF4LLM logic
+│   │   ├── excel_processor.py        # Excel/CSV processing (pandas, openpyxl)
 │   │   ├── image_processor.py        # Tesseract OCR logic
 │   │   ├── web_scraper.py            # URL scraping
 │   │   ├── text_processor.py         # Plain text handling
@@ -28,7 +30,8 @@ langchain-rag-system/
 │   ├── chunking/
 │   │   ├── __init__.py
 │   │   ├── text_splitter.py          # Chunking strategies
-│   │   └── semantic_chunker.py       # Advanced chunking
+│   │   ├── semantic_chunker.py       # Advanced chunking
+│   │   └── tabular_chunker.py        # Chunking for tabular data
 │   ├── embeddings/
 │   │   ├── __init__.py
 │   │   └── embedding_manager.py      # Embedding model handling
@@ -72,7 +75,7 @@ langchain-rag-system/
 ├── scripts/
 │   ├── build_faiss_store.py          # CLI to build stores
 │   ├── query_store.py                # CLI to query stores
-│   └── evaluate_retrieval.py        # Evaluation scripts
+│   └── evaluate_retrieval.py         # Evaluation scripts
 ├── notebooks/
 │   ├── exploration.ipynb             # Data exploration
 │   └── evaluation.ipynb              # Performance analysis
