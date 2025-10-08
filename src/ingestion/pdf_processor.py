@@ -6,7 +6,7 @@ from langchain_pymupdf4llm import PyMuPDF4LLMLoader
 from langchain_community.document_loaders.base import BaseBlobParser
 from ..utils.logger_setup import setup_logger
 
-logger = setup_logger(__name__)
+logger = setup_logger("pdf_processor.py")
 
 
 class BasePDFProcessor(ABC):
