@@ -1,4 +1,3 @@
-import os
 import time
 import base64
 from abc import ABC, abstractmethod
@@ -7,6 +6,7 @@ from PIL import Image, ImageFile
 from langchain_core.messages import SystemMessage, HumanMessage
 from ..llm.ollama_handler import OllamaHandler
 from ..utils.logger_setup import setup_logger
+from ..utils.common import validate_file_location, validate_file_type
 
 logger = setup_logger("image_processor.py")
 
@@ -17,22 +17,15 @@ class BaseImageProcessor(ABC):
     def __init__(self, model_handler: OllamaHandler) -> None:
         """Initializes the valid image extensions"""
         self.model_handler = model_handler
-        self.valid_extensions = [".png", ".jpg", ".jpeg", ".bmp", ".gif", ".tiff"]
-
-    def validate_file_location(self, filepath: str) -> None:
-        """Check if given file exists"""
-        if not os.path.exists(filepath):
-            raise FileNotFoundError(f"Provided file '{filepath}' does not exist!")
-    
-    def validate_file_type(self, filepath: str) -> None:
-        """Check if given file is a valid image"""
-        if not any(filepath.lower().endswith(ext) for ext in self.valid_extensions):
-            raise ValueError(f"Provided file '{filepath}' is not a valid image file!")
+        self.valid_extensions = {".png", ".jpg", ".jpeg", ".bmp", ".gif", ".tiff"}
     
     def validate_image_file(self, filepath: str) -> None:
         """Validates if the given file exists and is an image"""
-        self.validate_file_location(filepath)
-        self.validate_file_type(filepath)
+        validate_file_location(filepath=filepath)
+        validate_file_type(
+            filepath=filepath,
+            valid_extensions=self.valid_extensions
+        )
 
     def convert_to_base64(self, pil_image: ImageFile.ImageFile) -> str:
         """
@@ -100,7 +93,8 @@ class OllamaImageProcessor(BaseImageProcessor):
             logger.info(f"Image processed in {time.time() - processing_start_time:.2f} seconds")
             return response
         except Exception as e:
-            raise RuntimeError(f"Failed to process image using Ollama model! {e}")
+            raise RuntimeError("Failed to process image using "
+                               f"'{self.model_handler.model_ckpt}' model via Ollama! {e}")
 
 
 # EXAMPLE USAGE
@@ -118,5 +112,5 @@ class OllamaImageProcessor(BaseImageProcessor):
 #                       "If the image contains text, return the text as-is. "
 #                       "If the image does not contain text, provide a brief description of the image content."
 #     )
-#     result = image_processor.process(image_filepath="/home/omkanekar28/code/Omnisearch-RAG/data/testing/Screenshot 2023-08-16 150706.png")
+#     result = image_processor.process(image_filepath="")
 #     print(f"Result: {result}")

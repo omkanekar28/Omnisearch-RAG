@@ -1,10 +1,10 @@
-import os
 import time
 from typing import List, Optional
 from abc import ABC, abstractmethod
 from langchain_pymupdf4llm import PyMuPDF4LLMLoader
 from langchain_community.document_loaders.base import BaseBlobParser
 from ..utils.logger_setup import setup_logger
+from ..utils.common import validate_file_location, validate_file_type
 
 logger = setup_logger("pdf_processor.py")
 
@@ -14,9 +14,17 @@ class BasePDFProcessor(ABC):
 
     def __init__(self, filepath: str) -> None:
         """Initializes the file path"""
-        if not os.path.exists(filepath):
-            raise FileNotFoundError(f"Provided file '{filepath}' does not exist!")
+        self.valid_extensions = {".pdf"}
         self.filepath = filepath
+        self.validate_pdf_file()
+
+    def validate_pdf_file(self) -> None:
+        """Validates if the given file exists and is a PDF"""
+        validate_file_location(filepath=self.filepath)
+        validate_file_type(
+            filepath=self.filepath,
+            valid_extensions=self.valid_extensions
+        )
 
     @abstractmethod
     def process(self) -> List[str]:
@@ -65,7 +73,7 @@ class PyMuPDF4LLMPDFProcessor(BasePDFProcessor):
             )
             return [page.page_content or "" for page in pages]
         except Exception as e:
-            raise RuntimeError(f"Failed to process PDF using PyMuPDF4LLM! {e}")
+            raise RuntimeError(f"Failed to process '{self.filepath}' PDF using PyMuPDF4LLM! {e}")
 
 # EXAMPLE USAGE
 # if __name__ == "__main__":
