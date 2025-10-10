@@ -12,7 +12,7 @@ class ExcelProcessor():
 
     def __init__(self) -> None:
         """Initializes the file path"""
-        self.valid_extensions = {".xl", ".xlsx", ".xlsm", ".xlsb", ".xls"}
+        self.valid_extensions = {".xl", ".xlsx", ".xlsm", ".xlsb", ".xls", ".csv"}
 
     def validate_excel_file(self, filepath: str) -> None:
         """Validates if the given file exists and is an Excel file"""
