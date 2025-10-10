@@ -27,7 +27,7 @@ class BaseDocProcessor(ABC):
 
     @abstractmethod
     def process(self) -> List[str]:
-        """Processes the Document and returns text found for each page"""
+        """Processes the Document and returns text found"""
         pass
 
 
@@ -53,7 +53,7 @@ class Doc2TxtDocProcessor(BaseDocProcessor):
             raise
 
     def process(self) -> List[str]:
-        """Processes the Document and returns text found"""
+        """Processes the Document using Doc2Txt and returns text found"""
         try:
             processing_start_time = time.time()
             logger.info(f"Processing file: '{self.filepath}' using Doc2Txt...")
@@ -88,7 +88,7 @@ class UnstructuredDocProcessor(BaseDocProcessor):
             raise
 
     def process(self) -> List[str]:
-        """Processes the Document and returns text found"""
+        """Processes the Document using UnstructuredWordDocumentLoader and returns text found"""
         try:
             processing_start_time = time.time()
             logger.info(f"Processing file: '{self.filepath}' using UnstructuredDocProcessor...")
