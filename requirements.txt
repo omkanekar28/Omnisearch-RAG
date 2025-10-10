@@ -1,4 +1,5 @@
 langchain-community==0.3.31
 langchain-pymupdf4llm==0.4.1
+langchain-ollama==0.3.10
 Pillow==11.3.0
 pytesseract==0.3.13
