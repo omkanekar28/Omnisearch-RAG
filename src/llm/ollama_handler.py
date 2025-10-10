@@ -11,13 +11,22 @@ logger = setup_logger("ollama_handler.py")
 class ModelHandler(ABC):
     """Base class for Model Handlers"""
 
-    def validate_messages(self, messages: List[Union[SystemMessage, HumanMessage, AIMessage]]) -> None:
+    def validate_messages(
+            self, 
+            messages: List[Union[
+                SystemMessage, 
+                HumanMessage, 
+                AIMessage
+            ]]
+    ) -> None:
         """Validates if the given messages are valid"""
         if not messages or not isinstance(messages, list):
-            raise ValueError("Messages should be a non-empty list of SystemMessage, HumanMessage, or AIMessage objects.")
+            raise ValueError("Messages should be a non-empty list of "
+                             "SystemMessage, HumanMessage, or AIMessage objects.")
         for message in messages:
             if not isinstance(message, (SystemMessage, HumanMessage, AIMessage)):
-                raise TypeError("Each message should be an instance of SystemMessage, HumanMessage, or AIMessage.")
+                raise TypeError("Each message should be an instance of "
+                                "SystemMessage, HumanMessage, or AIMessage.")
 
     @abstractmethod
     def initialize_model(self):
@@ -25,13 +34,21 @@ class ModelHandler(ABC):
         pass
     
     @abstractmethod
-    def generate_response_chat(self, messages: List[Union[SystemMessage, HumanMessage, AIMessage]]) -> str:
+    def generate_response_chat(
+        self, 
+        messages: List[Union[
+            SystemMessage, 
+            HumanMessage, 
+            AIMessage
+        ]]
+    ) -> str:
         """
         Generates response for the given messages
 
         Example:
             messages = [
-                SystemMessage(content="You are a financial analyst expert. Extract data accurately from financial documents."),
+                SystemMessage(content="You are a financial analyst expert. 
+                                       Extract data accurately from financial documents."),
                 HumanMessage(content=[
                     {"type": "text", "text": "What is the dollar based gross retention rate?"},
                     {"type": "image_url", "image_url": f"data:image/jpeg;base64,{image_b64}"}
@@ -72,9 +89,17 @@ class OllamaHandler(ModelHandler):
             num_predict=self.num_predict,
             base_url=self.base_url
         )
-        logger.info(f"Model: {self.model_ckpt} initialized in {time.time() - model_initialization_start_time:.2f} seconds")
+        logger.info(f"Model: {self.model_ckpt} initialized in "
+                    f"{time.time() - model_initialization_start_time:.2f} seconds")
     
-    def generate_response_chat(self, messages: List[Union[SystemMessage, HumanMessage, AIMessage]]) -> str:
+    def generate_response_chat(
+            self, 
+            messages: List[Union[
+                SystemMessage, 
+                HumanMessage, 
+                AIMessage
+            ]]
+    ) -> str:
         """Generates response for the given prompt"""
         self.validate_messages(messages)
         logger.info(f"Generating response using model: {self.model_ckpt}...")
@@ -82,7 +107,8 @@ class OllamaHandler(ModelHandler):
         try:
             response = self.model.invoke(messages)
             logger.debug(f"Model Response: {response}")
-            logger.info(f"Response generated in {time.time() - inference_start_time:.2f} seconds")
+            logger.info("Response generated in "
+                        f"{time.time() - inference_start_time:.2f} seconds")
             if response and response.content:
                 return response.content
             raise ValueError("Model returned empty response")

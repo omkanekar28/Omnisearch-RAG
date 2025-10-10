@@ -1,5 +1,5 @@
 import time
-from typing import List
+from typing import List, Literal
 from abc import ABC, abstractmethod
 from langchain_community.document_loaders import Docx2txtLoader, UnstructuredWordDocumentLoader
 from ..utils.logger_setup import setup_logger
@@ -44,7 +44,8 @@ class Doc2TxtDocProcessor(BaseDocProcessor):
         try:
             # THROW ERROR IF .doc FILE IS PROVIDED
             if filepath.lower().endswith(".doc"):
-                raise ValueError("Docx2txtLoader does not support .doc files. Please use UnstructuredDocProcessor for .doc files.")
+                raise ValueError("Docx2txtLoader does not support .doc files! "
+                                 "Please use UnstructuredDocProcessor for .doc files.")
             
             super().__init__(filepath)
             self.loader = Docx2txtLoader(file_path=self.filepath)
@@ -73,7 +74,11 @@ class Doc2TxtDocProcessor(BaseDocProcessor):
 class UnstructuredDocProcessor(BaseDocProcessor):
     """Class for Document processing using Docx2txt library"""
 
-    def __init__(self, filepath: str) -> None:
+    def __init__(
+        self, 
+        filepath: str, 
+        mode: Literal["single", "elements", "paged"] = "single"
+    ) -> None:
         """
         Initializes the Unstructured Loader
 
@@ -82,7 +87,10 @@ class UnstructuredDocProcessor(BaseDocProcessor):
         """
         try:
             super().__init__(filepath)
-            self.loader = UnstructuredWordDocumentLoader(file_path=self.filepath)
+            self.loader = UnstructuredWordDocumentLoader(
+                file_path=self.filepath,
+                mode=mode
+            )
         except Exception as e:
             logger.error(f"Error initializing UnstructuredWordDocumentLoader: {e}")
             raise
@@ -92,27 +100,26 @@ class UnstructuredDocProcessor(BaseDocProcessor):
         try:
             processing_start_time = time.time()
             logger.info(f"Processing file: '{self.filepath}' using UnstructuredDocProcessor...")
-            documents = self.loader.load()
-            if not documents or not documents[0].page_content.strip():
-                logger.warning("No text found in the document.")
-                return []
+            pages = self.loader.load()
+            results = [page.page_content or "" for page in pages]
+
             logger.info(
                 f"File: '{self.filepath}' processed in "
                 f"{time.time() - processing_start_time:.2f} seconds"
             )
-            return [documents[0].page_content.strip()]
+            return results
         except Exception as e:
-            raise RuntimeError(f"Failed to process '{self.filepath}' document using UnstructuredWordDocumentLoader! {e}")
+            raise RuntimeError(f"Failed to process '{self.filepath}' document "
+                               f"using UnstructuredWordDocumentLoader! {e}")
 
 
 # EXAMPLE USAGE
 # if __name__ == "__main__":
 #     processor = UnstructuredDocProcessor(
 #         filepath="",
+#         mode="single"
 #     )
 #     results = processor.process()
 
 #     for page in results:
-#         print("******************************")
 #         print(page)
-#         print("******************************")
