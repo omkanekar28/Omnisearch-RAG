@@ -34,8 +34,8 @@ class WebScraper:
         return text
 
 
-if __name__ == "__main__":
-    scraper = WebScraper()
-    url = "https://oneshield.com/about/"
-    result = scraper(url)
-    print(result)
+# if __name__ == "__main__":
+#     scraper = WebScraper()
+#     url = ""
+#     result = scraper(url)
+#     print(result)
