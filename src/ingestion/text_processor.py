@@ -3,7 +3,7 @@ from typing import List
 from ..utils.logger_setup import setup_logger
 from ..utils.common import validate_file_location, validate_file_type
 
-logger = setup_logger("dext_processor.py")
+logger = setup_logger("text_processor.py")
 
 
 class TextProcessor():
