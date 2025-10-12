@@ -35,6 +35,38 @@ class ExcelProcessor():
             return dataframes
         else:
             raise ValueError(f"Unsupported file format for '{filepath}'!")
+    
+    def remove_empty_rows(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Removes empty rows from the DataFrame"""
+        return df.dropna(how='all').reset_index(drop=True)
+    
+    def remove_unnamed_columns(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Removes unnamed columns from the DataFrame"""
+        col_finalized = False
+        while not col_finalized:
+            for col in df.columns:
+                
+                try:
+                    if col.startswith('Unnamed'):
+                        df.columns = df.iloc[0]
+                        df = df[1:].reset_index(drop=True)
+                        break
+                except AttributeError:
+                    continue
+            else:
+                col_finalized = True
+        return df
+
+    def remove_empty_columns(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Removes empty columns from the DataFrame"""
+        return df.dropna(axis=1, how='all')
+    
+    def clean_df(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Cleans the DataFrame by removing empty rows and columns"""
+        df = self.remove_empty_rows(df)
+        df = self.remove_unnamed_columns(df)
+        df = self.remove_empty_columns(df)
+        return df
 
     def process(self, filepath: str) -> List[str]:
         """Processes the Excel file and returns text found"""
@@ -46,6 +78,7 @@ class ExcelProcessor():
             dataframes = self.get_dataframe_from_file(filepath=filepath)
             text_data = []
             for idx, df in enumerate(dataframes):
+                df = self.clean_df(df)
                 text_data.append(f"--- Sheet {idx + 1} ---")
                 text_data.append(df.to_string(index=False))            
             

@@ -34,16 +34,12 @@ class TextChunker:
         if self.words_overlap == 0:
             logger.warning("words_overlap is set to 0. Chunks will be non-overlapping.")
 
-    def check_length_threshold(self, words: List[str]) -> bool:
-        """Checks if the text length exceeds the max_words_threshold"""
-        return len(words) > self.max_words_threshold
-
     def __call__(self, text: str) -> List[str]:
         """Chunks the given text into smaller parts based on the max_words_threshold and words_overlap"""
         logger.info(f"Chunking text having length: {len(text)} ...")
         words = re.findall(self.word_splitting_pattern, text)
 
-        if not self.check_length_threshold(words):
+        if not len(words) > self.max_words_threshold:
             logger.info("Text length is within the threshold. No chunking needed.")
             return [text]
         
