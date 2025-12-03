@@ -1,6 +1,7 @@
 import time
 import base64
 from abc import ABC, abstractmethod
+from typing import List
 from io import BytesIO
 from PIL import Image, ImageFile
 from langchain_core.messages import SystemMessage, HumanMessage
@@ -43,7 +44,7 @@ class BaseImageProcessor(ABC):
         return img_str
 
     @abstractmethod
-    def process(self, image_filepath: str) -> str:
+    def process(self, image_filepath: str) -> List[str]:
         """Processes the given image and returns found text content"""
         pass
 
@@ -53,14 +54,22 @@ class OllamaImageProcessor(BaseImageProcessor):
 
     def __init__(
             self,
-            ollama_model_handler: OllamaHandler,
-            system_prompt: str,
+            ollama_model_handler: OllamaHandler = OllamaHandler(
+                model_ckpt="moondream:1.8b",
+                reasoning=False,
+                temperature=0.7,
+                num_predict=1024,
+                base_url="http://localhost:11434"
+            ),
+            system_prompt: str = "You are a helpful assistant that extracts text from images. "
+                "If the image contains text, return the text as-is. "
+                "If the image does not contain text, provide a brief description of the image content.",
     ) -> None:
         """Initializes the parent and child class parameters"""
         super().__init__(ollama_model_handler)
         self.system_prompt = system_prompt
     
-    def process(self, image_filepath: str) -> str:
+    def process(self, image_filepath: str) -> List[str]:
         """
         Analyzes the given image and returns its textual content.
 
@@ -72,7 +81,7 @@ class OllamaImageProcessor(BaseImageProcessor):
             image_filepath (str): Path to the input image file.
 
         Returns:
-            str: Extracted text or a generated description of the image.
+            List[str]: Extracted text or a generated description of the image.
         """
         self.validate_image_file(image_filepath)
         processing_start_time = time.time()
@@ -91,10 +100,10 @@ class OllamaImageProcessor(BaseImageProcessor):
             ]
             response = self.model_handler.generate_response_chat(messages)
             logger.info(f"Image processed in {time.time() - processing_start_time:.2f} seconds")
-            return response
+            return [response]
         except Exception as e:
-            raise RuntimeError("Failed to process image using "
-                               f"'{self.model_handler.model_ckpt}' model via Ollama! {e}")
+            raise RuntimeError(f"Failed to process image using '{self.model_handler.model_ckpt}' "
+                               f"model via Ollama! {e}")
 
 
 # EXAMPLE USAGE

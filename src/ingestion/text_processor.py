@@ -11,7 +11,7 @@ class TextProcessor():
 
     def __init__(self) -> None:
         """Initializes the necessary parameters"""
-        self.valid_extensions = {".txt"}
+        self.valid_extensions = [".txt", ".md", ".log"]
 
     def validate_txt_file(self, filepath: str) -> None:
         """Validates if the given file exists and is a text file"""

@@ -12,22 +12,20 @@ logger = setup_logger("pdf_processor.py")
 class BasePDFProcessor(ABC):
     """Abstract base class for PDF processing"""
 
-    def __init__(self, filepath: str) -> None:
+    def __init__(self) -> None:
         """Initializes the file path"""
         self.valid_extensions = {".pdf"}
-        self.filepath = filepath
-        self.validate_pdf_file()
 
-    def validate_pdf_file(self) -> None:
+    def validate_pdf_file(self, filepath: str) -> None:
         """Validates if the given file exists and is a PDF"""
-        validate_file_location(filepath=self.filepath)
+        validate_file_location(filepath=filepath)
         validate_file_type(
-            filepath=self.filepath,
+            filepath=filepath,
             valid_extensions=self.valid_extensions
         )
 
     @abstractmethod
-    def process(self) -> List[str]:
+    def process(self, filepath: str) -> List[str]:
         """Processes the PDF and returns text found for each page"""
         pass
 
@@ -37,7 +35,6 @@ class PyMuPDF4LLMPDFProcessor(BasePDFProcessor):
 
     def __init__(
         self,
-        filepath: str,
         mode: Literal["single", "page"] = "page",
         extract_images: bool = False,
         images_parser: Optional[BaseBlobParser] = None,
@@ -51,23 +48,26 @@ class PyMuPDF4LLMPDFProcessor(BasePDFProcessor):
             images_parser (Optional[BaseBlobParser]): Parser to use for image extraction
         """
         try:
-            super().__init__(filepath)
-
-            self.loader = PyMuPDF4LLMLoader(
-                file_path=self.filepath,
-                mode=mode,
-                extract_images=extract_images,
-                images_parser=images_parser
-            )
+            super().__init__()
+            self.mode = mode
+            self.extract_images = extract_images
+            self.images_parser = images_parser
         except Exception as e:
             raise RuntimeError(f"Failed to initialize PyMuPDF4LLM Loader! {e}")
     
-    def process(self) -> List[str]:
+    def process(self, filepath: str) -> List[str]:
         """Processes the PDF and returns extracted text for each page"""
         try:
             processing_start_time = time.time()
-            logger.info(f"Processing file: '{self.filepath}' using PyMuPDF4LLM...")
-            pages = self.loader.load()
+            self.validate_pdf_file(filepath=filepath)
+            loader = PyMuPDF4LLMLoader(
+                file_path=filepath,
+                mode=self.mode,
+                extract_images=self.extract_images,
+                images_parser=self.images_parser
+            )
+            logger.info(f"Processing file: '{filepath}' using PyMuPDF4LLM...")
+            pages = loader.load()
             results = [page.page_content or "" for page in pages]
 
             # ADDING PAGE NUMBER HEADERS
@@ -77,23 +77,22 @@ class PyMuPDF4LLMPDFProcessor(BasePDFProcessor):
                 results_with_headers.append(content.strip())
 
             logger.info(
-                f"File: '{self.filepath}' having {len(pages)} pages processed "
+                f"File: '{filepath}' having {len(pages)} pages processed "
                 f"in {time.time() - processing_start_time:.2f} seconds"
             )
             return results_with_headers
         except Exception as e:
-            raise RuntimeError(f"Failed to process '{self.filepath}' PDF using PyMuPDF4LLM! {e}")
+            raise RuntimeError(f"Failed to process '{filepath}' PDF using PyMuPDF4LLM! {e}")
 
 # EXAMPLE USAGE
 # if __name__ == "__main__":
 #     from langchain_community.document_loaders.parsers import TesseractBlobParser
 #     processor = PyMuPDF4LLMPDFProcessor(
-#         filepath="",
 #         mode="page",
 #         extract_images=True,
 #         images_parser=TesseractBlobParser()
 #     )
-#     results = processor.process()
+#     results = processor.process(filepath="")
 
 #     for page in results:
 #         print(page)
