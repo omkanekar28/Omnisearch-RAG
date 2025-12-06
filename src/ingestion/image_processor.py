@@ -9,7 +9,10 @@ from ..llm.ollama_handler import OllamaHandler
 from ..utils.logger_setup import setup_logger
 from ..utils.common import validate_file_location, validate_file_type
 
-logger = setup_logger("image_processor.py")
+logger = setup_logger(
+    logger_name="image_preprocessor.py", 
+    filename="image_preprocessor.log"
+)
 
 
 class BaseImageProcessor(ABC):

@@ -5,7 +5,10 @@ from bs4 import BeautifulSoup
 from urllib.parse import urlparse
 from ..utils.logger_setup import setup_logger
 
-logger = setup_logger("web_scraper.py")
+logger = setup_logger(
+    logger_name="web_scraper.py", 
+    filename="web_scraper.log"
+)
 
 
 class WebScraper:
@@ -34,7 +37,7 @@ class WebScraper:
         except Exception:
             return False
 
-    def __call__(self, url: str) -> List[str]:
+    def process(self, url: str) -> List[str]:
         """Fetches and returns the main textual content of a given URL."""
         # VALIDATE URL
         if not self.is_valid_url(url):
@@ -62,5 +65,5 @@ class WebScraper:
 # if __name__ == "__main__":
 #     scraper = WebScraper()
 #     url = ""
-#     result = scraper(url)
+#     result = scraper.process(url)
 #     print(result)

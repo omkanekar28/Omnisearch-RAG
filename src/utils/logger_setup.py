@@ -1,9 +1,11 @@
+import os
 import logging
 from logging import Logger
 
 def setup_logger(
     logger_name: str, 
-    filename: str = "omnisearch_rag.log"
+    filename: str, 
+    store_dir: str = "./logs/"
 ) -> Logger:
     """
     Sets up a logger that:
@@ -15,6 +17,10 @@ def setup_logger(
     Returns:
         logging.Logger: Configured logger instance.
     """
+    # CREATE FILE IF NOT EXISTS
+    filepath = os.path.join(store_dir, filename)
+    os.makedirs(os.path.dirname(filepath), exist_ok=True)
+
     logger = logging.getLogger(logger_name)
     logger.setLevel(logging.DEBUG)
 
@@ -30,7 +36,7 @@ def setup_logger(
     console_handler.setLevel(logging.DEBUG)
     console_handler.setFormatter(formatter)
 
-    file_handler = logging.FileHandler(filename, mode='a', encoding='utf-8')
+    file_handler = logging.FileHandler(filepath, mode='a', encoding='utf-8')
     file_handler.setLevel(logging.INFO)  # Skip DEBUG logs
     file_handler.setFormatter(formatter)
 

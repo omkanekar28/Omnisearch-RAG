@@ -5,7 +5,10 @@ from typing import List
 from sentence_transformers import SentenceTransformer
 from ..utils.logger_setup import setup_logger
 
-logger = setup_logger("embedding_handler.py")
+logger = setup_logger(
+    logger_name="embedding_handler.py", 
+    filename="embedding_handler.log"
+)
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 

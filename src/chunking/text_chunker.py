@@ -4,7 +4,10 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from abc import ABC, abstractmethod
 from ..utils.logger_setup import setup_logger
 
-logger = setup_logger("text_chunker.py")
+logger = setup_logger(
+    logger_name="text_chunker.py", 
+    filename="text_chunker.log"
+)
 
 
 class BaseChunker(ABC):

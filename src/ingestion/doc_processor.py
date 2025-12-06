@@ -5,7 +5,10 @@ from langchain_community.document_loaders import Docx2txtLoader, UnstructuredWor
 from ..utils.logger_setup import setup_logger
 from ..utils.common import validate_file_location, validate_file_type
 
-logger = setup_logger("doc_processor.py")
+logger = setup_logger(
+    logger_name="doc_preprocessor.py", 
+    filename="doc_preprocessor.log"
+)
 
 
 class BaseDocProcessor(ABC):

@@ -3,9 +3,13 @@ from abc import ABC, abstractmethod
 from typing import List, Union
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from langchain_ollama import ChatOllama
+from httpx import ConnectError
 from ..utils.logger_setup import setup_logger
 
-logger = setup_logger("ollama_handler.py")
+logger = setup_logger(
+    logger_name="ollama_handler.py", 
+    filename="ollama_handler.log"
+)
 
 
 class ModelHandler(ABC):
@@ -112,8 +116,13 @@ class OllamaHandler(ModelHandler):
             if response and response.content:
                 return response.content
             raise ValueError("Model returned empty response")
+        except ConnectError:
+            logger.error(f"Connection error while connecting to Ollama server! Make sure the server is running and accessible at {self.base_url}.")
+            raise
         except Exception as e:
             logger.error(f"Error generating response: {e}")
+            import traceback
+            traceback.print_exc()
             raise
 
 

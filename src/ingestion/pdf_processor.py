@@ -6,7 +6,10 @@ from langchain_community.document_loaders.base import BaseBlobParser
 from ..utils.logger_setup import setup_logger
 from ..utils.common import validate_file_location, validate_file_type
 
-logger = setup_logger("pdf_processor.py")
+logger = setup_logger(
+    logger_name="pdf_preprocessor.py", 
+    filename="pdf_preprocessor.log"
+)
 
 
 class BasePDFProcessor(ABC):

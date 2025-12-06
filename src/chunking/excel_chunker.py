@@ -1,7 +1,10 @@
 from typing import List
 from ..utils.logger_setup import setup_logger
 
-logger = setup_logger("excel_chunker.py")
+logger = setup_logger(
+    logger_name="excel_chunker.py", 
+    filename="excel_chunker.log"
+)
 
 
 class ExcelChunker:

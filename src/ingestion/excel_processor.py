@@ -4,7 +4,10 @@ from typing import List
 from ..utils.logger_setup import setup_logger
 from ..utils.common import validate_file_location, validate_file_type
 
-logger = setup_logger("excel_processor.py")
+logger = setup_logger(
+    logger_name="excel_preprocessor.py", 
+    filename="excel_preprocessor.log"
+)
 
 
 class ExcelProcessor():

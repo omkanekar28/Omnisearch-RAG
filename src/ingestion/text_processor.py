@@ -3,7 +3,10 @@ from typing import List
 from ..utils.logger_setup import setup_logger
 from ..utils.common import validate_file_location, validate_file_type
 
-logger = setup_logger("text_processor.py")
+logger = setup_logger(
+    logger_name="text_preprocessor.py", 
+    filename="text_preprocessor.log"
+)
 
 
 class TextProcessor():
