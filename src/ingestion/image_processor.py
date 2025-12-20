@@ -64,7 +64,7 @@ class OllamaImageProcessor(BaseImageProcessor):
                 num_predict=1024,
                 base_url="http://localhost:11434"
             ),
-            system_prompt: str = "You are a helpful assistant that extracts text from images. "
+            system_prompt: str = "You are a helpful assistant that extracts content from images. "
                 "If the image contains text, return the text as-is. "
                 "If the image does not contain text, provide a brief description of the image content.",
     ) -> None:

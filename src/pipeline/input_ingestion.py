@@ -25,8 +25,8 @@ logger = setup_logger(
 )
 
 
-class OmniSearchPipeline:
-    """Main OmniSearch Pipeline class"""
+class IngestionPipeline:
+    """Main OmniSearch Ingestion Pipeline class"""
 
     def __init__(
         self, 
@@ -79,6 +79,7 @@ class OmniSearchPipeline:
         """Saves the results to an Excel file"""
         all_data = []
         for input_source, text in results.items():
+            input_filepath = input_source.split(' | ')[0]
             file_type = input_source.split('.')[-1].lower() if not self.web_scraper.is_valid_url(input_source) else "URL"
             
             if file_type == 'URL':
@@ -92,7 +93,7 @@ class OmniSearchPipeline:
                 chunk_no = temp[2] if len(temp) > 2 else "N/A"
 
             all_data.append({
-                "Input Source": input_source,
+                "Input Source": input_filepath,
                 "File Type": file_type,
                 "Page No": page_no,
                 "Chunk No": chunk_no,
