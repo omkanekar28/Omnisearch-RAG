@@ -16,36 +16,23 @@ class FaissVectorStore:
     def __init__(
         self, 
         n_dims: int = 768,
-        faiss_index: Literal["FlatL2", "FlatIP"] = "FlatL2", 
         use_gpu: bool = False
     ) -> None:
         """Initializes the vector store."""
         initialization_start_time = time.time()
         logger.info("Initializing FAISS vector store ...")
         self.n_dims = n_dims
+        self.faiss_index = faiss.IndexFlatL2(n_dims)
         
-        if faiss_index == "FlatL2":
-            self.faiss_index = faiss.IndexFlatL2(n_dims)
-            if use_gpu:
-                logger.info("Using GPU for FAISS index ...")
-                try:
-                    resource = faiss.StandardGpuResources()
-                except AttributeError:
-                    raise RuntimeError("FAISS GPU resources not available! "
-                                       "Ensure FAISS is installed with GPU support.")
-                faiss.index_cpu_to_gpu(resource, 0, self.faiss_index)
-        elif faiss_index == "FlatIP":
-            self.faiss_index = faiss.IndexFlatIP(n_dims)
-            if use_gpu:
-                logger.info("Using GPU for FAISS index ...")
-                try:
-                    resource = faiss.StandardGpuResources()
-                except AttributeError:
-                    raise RuntimeError("FAISS GPU resources not available! "
-                                       "Ensure FAISS is installed with GPU support.")
-                faiss.index_cpu_to_gpu(resource, 0, self.faiss_index)
-        else:
-            raise ValueError("Unsupported FAISS index type!")
+        if use_gpu:
+            logger.info("Using GPU for FAISS index ...")
+            try:
+                resource = faiss.StandardGpuResources()
+            except AttributeError:
+                raise RuntimeError("FAISS GPU resources not available! "
+                                    "Ensure FAISS is installed with GPU support.")
+            faiss.index_cpu_to_gpu(resource, 0, self.faiss_index)
+        
         logger.info("FAISS vector store initialized in "
                     f"{time.time() - initialization_start_time:.2f} seconds")
 
@@ -86,9 +73,9 @@ class FaissVectorStore:
             if not self.is_metadata_compatible(metadata):
                 raise ValueError(f"All metadata entries must contain the fields: {metadata_fields}!")
             
-            # STORING VECTORS
+            # STORING VECTORS - NORMALIZE BEFORE ADDING
             faiss_index_path = os.path.join(store_dir, "faiss_index.index")
-            self.faiss_index.add(np.array(vectors).astype('float32'))
+            self.faiss_index.add(vectors)
             faiss.write_index(self.faiss_index, faiss_index_path)
 
             # STORING METADATA (JSON)

@@ -121,8 +121,8 @@ class OllamaHandler(ModelHandler):
             raise
         except Exception as e:
             logger.error(f"Error generating response: {e}")
-            import traceback
-            traceback.print_exc()
+            # import traceback
+            # traceback.print_exc()
             raise
 
 

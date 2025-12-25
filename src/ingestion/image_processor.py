@@ -58,7 +58,7 @@ class OllamaImageProcessor(BaseImageProcessor):
     def __init__(
             self,
             ollama_model_handler: OllamaHandler = OllamaHandler(
-                model_ckpt="moondream:1.8b",
+                model_ckpt="qwen3-vl:2b",
                 reasoning=False,
                 temperature=0.7,
                 num_predict=1024,

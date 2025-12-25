@@ -25,7 +25,7 @@ class FaissEmbeddingIndexer:
         logger.info("Initializing FAISS embedding indexer ...")
         self.excel_processor = ExcelProcessor()    # NEED EXCEL PROCESSOR JUST FOR FILE PATH VALIDATION
         self.embedding_handler = EmbeddingHandler(model_id=embedding_model)
-        n_dims = self.embedding_handler.generate_embeddings(["Hello World!"])[0].shape[0]
+        n_dims = self.embedding_handler.generate_embeddings(["Hello World!"]).shape[1]
         self.vector_store = FaissVectorStore(
             n_dims=n_dims, 
             use_gpu=True
