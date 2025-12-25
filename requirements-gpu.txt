@@ -1,0 +1,10 @@
+langchain-community==0.3.31
+langchain-pymupdf4llm==0.4.1
+langchain-ollama==0.3.10
+Pillow==11.3.0
+pytesseract==0.3.13
+docx2txt==0.9
+unstructured==0.18.15
+pandas==2.3.3
+openpyxl==3.1.5
+faiss-gpu-cu12==1.12.0
