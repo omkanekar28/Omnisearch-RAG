@@ -241,7 +241,7 @@ class IngestionPipeline:
 
 # EXAMPLE USAGE
 # if __name__ == "__main__":
-#     pipeline = OmniSearchPipeline()
+#     pipeline = IngestionPipeline()
 #     inputs = [
 #         "",  # ADD FILE PATHS OR URLS HERE
 #     ]
