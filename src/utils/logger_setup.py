@@ -1,11 +1,12 @@
 import os
 import logging
 from logging import Logger
+from config.config import LOG_STORE_DIR
 
 def setup_logger(
     logger_name: str, 
     filename: str, 
-    store_dir: str = "./logs/"
+    store_dir: str = LOG_STORE_DIR
 ) -> Logger:
     """
     Sets up a logger that:

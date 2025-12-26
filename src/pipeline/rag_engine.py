@@ -184,12 +184,18 @@ class RAGEngine:
         return "\n\n".join(context_parts)
 
 
+# EXAMPLE USAGE
 # if __name__ == "__main__":
+#     from ..config.config import (
+#         DISTANCE_THRESHOLD, TOP_K, 
+#         EMBEDDING_MODEL
+#     )
 #     rag = RAGEngine(
 #         index_path="faiss_store/faiss_index.index",
 #         metadata_path="faiss_store/metadata.json",
-#         distance_threshold=1.5,
-#         top_k=20
+#         embedding_model=EMBEDDING_MODEL,
+#         distance_threshold=DISTANCE_THRESHOLD,
+#         top_k=TOP_K
 #     )
 
 #     results, scores = rag.search("Describe the two fantastical creatures.")

@@ -90,13 +90,14 @@ class FaissVectorStore:
             raise RuntimeError(f"Failed to populate the vector store! {e}. Rolling back changes.")
 
 
+# EXAMPLE USAGE
 # if __name__ == "__main__":
+#     from config.config import USE_GPU
 #     import random
 #     input_embeddings = [[random.random() for _ in range(768)] for _ in range(2)]
 #     metadata = [
 #         {"id": 1, "name": "Alice"},
 #         {"id": 2, "name": "Bob"}
 #     ]
-#     vector_store = FaissVectorStore(use_gpu=True)
+#     vector_store = FaissVectorStore(use_gpu=USE_GPU)
 #     vector_store.populate_store(input_embeddings, metadata, "test_faiss_dir")
-    

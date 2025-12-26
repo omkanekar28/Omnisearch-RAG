@@ -93,8 +93,12 @@ class FaissEmbeddingIndexer:
             raise RuntimeError(f"Failed to process Excel file to FAISS store! {e}")
 
 
+# EXAMPLE USAGE
 # if __name__ == "__main__":
-#     indexer = FaissEmbeddingIndexer()
+#     from ..config.config import EMBEDDING_MODEL
+#     indexer = FaissEmbeddingIndexer(
+#         embedding_model=EMBEDDING_MODEL
+#     )
 #     excel_file = "results.xlsx"
 #     indexer.process_excel_to_faiss_store(
 #         excel_filepath=excel_file,

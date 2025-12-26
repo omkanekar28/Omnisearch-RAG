@@ -241,7 +241,24 @@ class IngestionPipeline:
 
 # EXAMPLE USAGE
 # if __name__ == "__main__":
-#     pipeline = IngestionPipeline()
+#     from ..config.config import (
+#         DOC_PROCESSOR, EXCEL_PROCESSOR, IMAGE_PROCESSOR, PDF_PROCESSOR, 
+#         TEXT_PROCESSOR, WEB_SCRAPER, TEXT_CHUNKER, EXCEL_CHUNKER, 
+#         SAVE_TO_EXCEL, SAVE_TO_JSON, MIN_CHUNK_CHARS
+#     )
+#     pipeline = IngestionPipeline(
+#         doc_processor=DOC_PROCESSOR,
+#         excel_processor=EXCEL_PROCESSOR,
+#         image_processor=IMAGE_PROCESSOR,
+#         pdf_processor=PDF_PROCESSOR,
+#         text_processor=TEXT_PROCESSOR,
+#         web_scraper=WEB_SCRAPER,
+#         text_chunker=TEXT_CHUNKER,
+#         excel_chunker=EXCEL_CHUNKER,
+#         save_to_excel=SAVE_TO_EXCEL,
+#         save_to_json=SAVE_TO_JSON,
+#         min_chunk_chars=MIN_CHUNK_CHARS
+#     )
 #     inputs = [
 #         "",  # ADD FILE PATHS OR URLS HERE
 #     ]
