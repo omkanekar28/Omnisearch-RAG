@@ -1,9 +1,11 @@
 import time
 import json
 import faiss
-from typing import List, Tuple, Dict, Optional
+from typing import List, Tuple, Dict, Optional, Union
 from pathlib import Path
+from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from ..embeddings.embedding_handler import EmbeddingHandler
+from ..llm.ollama_handler import OllamaHandler
 from ..utils.logger_setup import setup_logger
 
 logger = setup_logger(
@@ -19,6 +21,7 @@ class RAGEngine:
         self,
         index_path: str,
         metadata_path: str,
+        ollama_handler: OllamaHandler,
         embedding_model: str = "sentence-transformers/all-mpnet-base-v2",
         distance_threshold: float = 1.5,
         top_k: int = 5
@@ -35,7 +38,7 @@ class RAGEngine:
         """
         initialization_start_time = time.time()
         logger.info("Initializing RAG engine ...")
-        
+        self.ollama_handler = ollama_handler
         self.embedding_handler = EmbeddingHandler(model_id=embedding_model)
         self.distance_threshold = distance_threshold
         self.top_k = top_k
@@ -76,6 +79,61 @@ class RAGEngine:
         except Exception as e:
             raise RuntimeError(f"Failed to load metadata: {e}")
 
+    def describe_fetched_results(
+        self, 
+        results: List[Dict], 
+        distances: List[float],
+        text_column: str = "Extracted Text"
+    ) -> None:
+        """
+        Logs a summary of fetched results.
+        
+        Args:
+            results: List of matching documents
+            distances: Distances for each result
+            text_column: Column name containing the text content
+        """
+        if not results:
+            logger.warning("No results feteched.")
+            return
+        
+        logger.info("**************************************** FETCHED RESULTS ****************************************")
+        for i, (result, distance) in enumerate(zip(results, distances)):
+            text_snippet = result.get(text_column, "N/A")[:100].replace('\n', ' ')
+            result_to_print = {k: v for k, v in result.items() if k != text_column}
+            result_to_print["Text Snippet"] = text_snippet + "..."
+            logger.info(f"{i + 1}. "
+                        f"\n{json.dumps(result_to_print, indent=4)}"
+                        f"\n   Distance: {distance:.4f}\n\n")
+        logger.info("*************************************************************************************************")
+
+    def generate_context(
+        self, 
+        results: List[Dict], 
+        distances: List[float],
+        text_column: str = "Extracted Text"
+    ) -> str:
+        """
+        Generates context string from search results.
+        
+        Args:
+            results: List of matching documents
+            distances: Distances for each result
+            text_column: Column name containing the text content
+            
+        Returns:
+            Formatted context string
+        """
+        if not results:
+            return "No relevant context found."
+        
+        context_parts = []
+        for i, (result, distance) in enumerate(zip(results, distances), 1):
+            text = result.get(text_column, "N/A")
+            context_parts.append(f"[Result {i} - Distance: {distance:.3f}]\n{text}")
+        
+        return "\n\n".join(context_parts)
+
     def search(
         self, 
         query: str, 
@@ -91,7 +149,7 @@ class RAGEngine:
             distance_threshold: Maximum distance for considering a match (overrides default)
             
         Returns:
-            Tuple of (matching_documents, similarity_scores)
+            Tuple of (matching_documents, distances)
         """
         try:
             search_start_time = time.time()
@@ -110,92 +168,107 @@ class RAGEngine:
             indices = indices[0]
 
             # USE BELOW COMMENTED CODE TO LOG ALL RESULTS
-            # for i, dist in enumerate(distances):
-            #     logger.info(f"Result {i + 1}: Index={indices[i]}, Distance={dist:.4f}, Text Snippet='{self.metadata[indices[i]].get('Extracted Text', '')[:50]}...'")
+            for i, dist in enumerate(distances):
+                logger.info(f"Result {i + 1}: Index={indices[i]}, Distance={dist:.4f}, Text Snippet='{self.metadata[indices[i]].get('Extracted Text', '')[:50]}...'")
 
             # FILTER BY DISTANCE THRESHOLD
             results = []
-            scores = []
+            results_distances = []
             for idx, distance in zip(indices, distances):
                 if idx < len(self.metadata) and distance <= threshold:
                     results.append(self.metadata[idx])
-                    scores.append(float(distance))
+                    results_distances.append(distance)
 
-            self.describe_fetched_results(results, scores)
-            return results, scores
+            self.describe_fetched_results(results, results_distances)
+            return results, results_distances
             
         except Exception as e:
             logger.error(f"Search failed: {e}")
             raise RuntimeError(f"Failed to execute search: {e}")
     
-    def describe_fetched_results(
-        self, 
-        results: List[Dict], 
-        scores: List[float],
-        text_column: str = "Extracted Text"
-    ) -> None:
+    def get_qa_prompt(
+        self,
+        question: str,
+        context: str
+    ) -> List[Union[
+                SystemMessage, 
+                HumanMessage, 
+                AIMessage
+            ]]:
         """
-        Logs a summary of fetched results.
+        Constructs a QA prompt using the provided question and context.
         
         Args:
-            results: List of matching documents
-            scores: Similarity scores for each result
-            text_column: Column name containing the text content
-        """
-        if not results:
-            logger.warning("No results feteched.")
-            return
+            question: The question to answer
+            context: The context to use for answering
         
-        logger.info("**************************************** FETCHED RESULTS ****************************************")
-        for i, (result, score) in enumerate(zip(results, scores)):
-            text_snippet = result.get(text_column, "N/A")[:100].replace('\n', ' ')
-            result_to_print = {k: v for k, v in result.items() if k != text_column}
-            result_to_print["Text Snippet"] = text_snippet + "..."
-            logger.info(f"{i + 1}. "
-                        f"\n{json.dumps(result_to_print, indent=4)}"
-                        f"\n   Similarity Score: {score:.4f}\n\n")
-        logger.info("*************************************************************************************************")
-
-    def generate_context(
-        self, 
-        results: List[Dict], 
-        scores: List[float],
-        text_column: str = "Extracted Text"
+        Returns:
+            The constructed QA prompt
+        """
+        messages = [
+            SystemMessage(content="You are an AI assistant that provides answers based on the given context. Return only the answer without any additional commentary."),
+            HumanMessage(content=f"Context:\n{context}\n\nQuestion: {question}")
+        ]
+        return messages
+    
+    def perform_question_answering(
+        self,
+        question: str
     ) -> str:
         """
-        Generates context string from search results.
+        Performs question answering by searching for context and generating an answer.
         
         Args:
-            results: List of matching documents
-            scores: Similarity scores for each result
-            text_column: Column name containing the text content
+            question: The question to answer
             
         Returns:
-            Formatted context string
+            The generated answer
         """
-        if not results:
-            return "No relevant context found."
-        
-        context_parts = []
-        for i, (result, score) in enumerate(zip(results, scores), 1):
-            text = result.get(text_column, "N/A")
-            context_parts.append(f"[Result {i} - Similarity: {score:.3f}]\n{text}")
-        
-        return "\n\n".join(context_parts)
+        try:
+            logger.info(f"Performing question answering for: '{question}' ...")
+            qa_start_time = time.time()
+            rag_metadata, rag_distances = self.search(question)
+            context = self.generate_context(
+                results=rag_metadata,
+                distances=rag_distances
+            )
+            messages = self.get_qa_prompt(
+                question=question,
+                context=context
+            )
+            logger.debug(f"Generated QA Prompt Messages:\n{messages}")
+            answer = self.ollama_handler.generate_response_chat(messages)
+            logger.info(f"Generated Answer: {answer}")
+            logger.info(f"Question answered in {time.time() - qa_start_time:.2f} seconds")
+            return answer
+        except Exception as e:
+            logger.error(f"Question answering failed: {e}")
+            raise RuntimeError(f"Failed to perform question answering: {e}")
 
 
 # EXAMPLE USAGE
 # if __name__ == "__main__":
 #     from ..config.config import (
 #         DISTANCE_THRESHOLD, TOP_K, 
-#         EMBEDDING_MODEL
+#         EMBEDDING_MODEL, 
+#         RAG_MODEL_CKPT, RAG_TEMPERATURE, RAG_NUM_PREDICT, RAG_OLLAMA_REASONING, 
+#         OLLAMA_BASE_URL
+#     )
+#     ollama_handler = OllamaHandler(
+#         model_ckpt=RAG_MODEL_CKPT,
+#         base_url=OLLAMA_BASE_URL,
+#         temperature=RAG_TEMPERATURE,
+#         num_predict=RAG_NUM_PREDICT, 
+#         reasoning=RAG_OLLAMA_REASONING
 #     )
 #     rag = RAGEngine(
 #         index_path="faiss_store/faiss_index.index",
 #         metadata_path="faiss_store/metadata.json",
+#         ollama_handler=ollama_handler,
 #         embedding_model=EMBEDDING_MODEL,
 #         distance_threshold=DISTANCE_THRESHOLD,
 #         top_k=TOP_K
 #     )
 
-#     results, scores = rag.search("Describe the two fantastical creatures.")
+#     answer = rag.perform_question_answering("What was OM AUDUMBAR SHET KANEKAR's Overall Percentile in CAT 2024?")
+#     print(f"Answer: {answer}")

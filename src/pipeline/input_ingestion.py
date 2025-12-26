@@ -20,8 +20,8 @@ warnings.filterwarnings(
 )
 
 logger = setup_logger(
-    logger_name="main.py", 
-    filename="main.log"
+    logger_name="input_ingestion.py", 
+    filename="input_ingestion.log"
 )
 
 
@@ -159,11 +159,15 @@ class IngestionPipeline:
                     f"Original count: {len(original_inputs)}, "
                     f"Unique count: {len(inputs)}"
                 )
+            
+            # TRACK EACH INPUT STATUS
+            input_status = {ip: "PENDING" for ip in inputs}
 
             # PROCESS EACH INPUT BASED ON TYPE
             processing_start_time = time.time()
             logger.info(f"Starting processing for {len(inputs)} inputs...")
             for ip_idx, ip in enumerate(inputs):
+                ip_status = "PROCESSING"
                 try:
                     logger.info(f"Processing input: '{ip}' ({ip_idx + 1} / {len(inputs)})...")
                     ip_extension = f".{ip.split('.')[-1].lower()}"
@@ -206,10 +210,23 @@ class IngestionPipeline:
                         )
                     else:
                         raise ValueError(f"Unsupported input type!")
+                    ip_status = "COMPLETED"
                     logger.info(f"Completed processing input: '{ip}'")
                 except Exception as e:
                     logger.warning(f"Error processing input '{ip}': {e}")
                     self.outputs[ip] = f"[ERROR]: {e}"
+                    ip_status = "FAILED"
+                finally:
+                    input_status[ip] = ip_status
+            
+            # LOG SUMMARY OF INPUT PROCESSING
+            success_count = sum(1 for status in input_status.values() if status == "COMPLETED")
+            failed_count = sum(1 for status in input_status.values() if status == "FAILED")
+            logger.info("******************** INPUT PROCESSING SUMMARY ********************")
+            logger.info(f"\t- Total: {len(inputs)}")
+            logger.info(f"\t- Successful: {success_count}")
+            logger.info(f"\t- Failed: {failed_count}")
+            logger.info("******************************************************************")
             
             # SAVE TO JSON IF ENABLED
             if self.save_to_json:
@@ -242,24 +259,75 @@ class IngestionPipeline:
 # EXAMPLE USAGE
 # if __name__ == "__main__":
 #     from ..config.config import (
-#         DOC_PROCESSOR, EXCEL_PROCESSOR, IMAGE_PROCESSOR, PDF_PROCESSOR, 
-#         TEXT_PROCESSOR, WEB_SCRAPER, TEXT_CHUNKER, EXCEL_CHUNKER, 
-#         SAVE_TO_EXCEL, SAVE_TO_JSON, MIN_CHUNK_CHARS
+#         DOC_PROCESSOR_TYPE, DOC_PROCESSOR_MODE, 
+#         IMAGE_MODEL_CKPT, IMAGE_TEMPERATURE, IMAGE_NUM_PREDICT, 
+#         OLLAMA_BASE_URL, IMAGE_OLLAMA_REASONING, 
+#         PDF_MODE, PDF_EXTRACT_IMAGES, 
+#         TEXT_CHUNKER_TYPE, TEXT_CHUNK_SIZE, TEXT_CHUNK_OVERLAP, 
+#         WEB_SCRAPER_REQUEST_TIMEOUT, 
+#         EXCEL_MAX_ROWS_THRESHOLD, EXCEL_ROWS_OVERLAP, 
+#         SAVE_TO_EXCEL, SAVE_TO_JSON, 
+#         MIN_CHUNK_CHARS
 #     )
+#     from ..llm.ollama_handler import OllamaHandler
+
+#     def build_processors():
+#         doc_processor = (
+#             Doc2TxtDocProcessor()
+#             if DOC_PROCESSOR_TYPE == "doc2txt"
+#             else UnstructuredDocProcessor(mode=DOC_PROCESSOR_MODE)
+#         )
+
+#         image_processor = OllamaImageProcessor(
+#             ollama_model_handler=OllamaHandler(
+#                 model_ckpt=IMAGE_MODEL_CKPT,
+#                 reasoning=IMAGE_OLLAMA_REASONING,
+#                 temperature=IMAGE_TEMPERATURE,
+#                 num_predict=IMAGE_NUM_PREDICT,
+#                 base_url=OLLAMA_BASE_URL,
+#             )
+#         )
+
+#         return {
+#             "doc": doc_processor,
+#             "excel": ExcelProcessor(),
+#             "image": image_processor,
+#             "pdf": PyMuPDF4LLMPDFProcessor(
+#                 mode=PDF_MODE,
+#                 extract_images=PDF_EXTRACT_IMAGES,
+#             ),
+#             "text": TextProcessor(),
+#             "web": WebScraper(request_timeout=WEB_SCRAPER_REQUEST_TIMEOUT),
+#             "text_chunker": LangchainTextChunker(
+#                 chunk_size=TEXT_CHUNK_SIZE,
+#                 chunk_overlap=TEXT_CHUNK_OVERLAP,
+#             ) if TEXT_CHUNKER_TYPE == "langchain" else CustomTextChunker(
+#                 chunk_size=TEXT_CHUNK_SIZE,
+#                 chunk_overlap=TEXT_CHUNK_OVERLAP,
+#             ),
+#             "excel_chunker": ExcelChunker(
+#                 max_rows_threshold=EXCEL_MAX_ROWS_THRESHOLD,
+#                 rows_overlap=EXCEL_ROWS_OVERLAP,
+#             ),
+#         }
+    
+#     processors = build_processors()
+
 #     pipeline = IngestionPipeline(
-#         doc_processor=DOC_PROCESSOR,
-#         excel_processor=EXCEL_PROCESSOR,
-#         image_processor=IMAGE_PROCESSOR,
-#         pdf_processor=PDF_PROCESSOR,
-#         text_processor=TEXT_PROCESSOR,
-#         web_scraper=WEB_SCRAPER,
-#         text_chunker=TEXT_CHUNKER,
-#         excel_chunker=EXCEL_CHUNKER,
+#         doc_processor=processors["doc"],
+#         excel_processor=processors["excel"],
+#         image_processor=processors["image"],
+#         pdf_processor=processors["pdf"],
+#         text_processor=processors["text"],
+#         web_scraper=processors["web"],
+#         text_chunker=processors["text_chunker"],
+#         excel_chunker=processors["excel_chunker"],
 #         save_to_excel=SAVE_TO_EXCEL,
 #         save_to_json=SAVE_TO_JSON,
 #         min_chunk_chars=MIN_CHUNK_CHARS
 #     )
-#     inputs = [
-#         "",  # ADD FILE PATHS OR URLS HERE
-#     ]
+
+#     dir_path = "data/testing"
+#     import os
+#     inputs = [os.path.join(dir_path, fname) for fname in os.listdir(dir_path)]
 #     results = pipeline(inputs=inputs)

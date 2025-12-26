@@ -1,7 +1,7 @@
 import os
 import logging
 from logging import Logger
-from config.config import LOG_STORE_DIR
+from ..config.config import LOG_STORE_DIR
 
 def setup_logger(
     logger_name: str, 
@@ -10,8 +10,8 @@ def setup_logger(
 ) -> Logger:
     """
     Sets up a logger that:
-      - Prints all logs (including DEBUG) to console
-      - Writes logs (INFO and above) to a file
+      - Prints logs (INFO and above) to console
+      - Writes all logs (including DEBUG) to a file
     Args:
         logger_name (str): Name of the logger.
         filename (str): Path to the log file.
@@ -34,11 +34,11 @@ def setup_logger(
     )
 
     console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.DEBUG)
+    console_handler.setLevel(logging.INFO)  # Skip DEBUG logs
     console_handler.setFormatter(formatter)
 
     file_handler = logging.FileHandler(filepath, mode='a', encoding='utf-8')
-    file_handler.setLevel(logging.INFO)  # Skip DEBUG logs
+    file_handler.setLevel(logging.DEBUG)
     file_handler.setFormatter(formatter)
 
     logger.addHandler(console_handler)
