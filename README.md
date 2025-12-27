@@ -1,59 +1,123 @@
 # Omnisearch-RAG
-Multi-modal RAG system supporting PDFs, images, excel, text, and URLs. Built with LangChain and FAISS for intelligent document retrieval and QA.
 
-## Setup
+**Multi‑modal Retrieval-Augmented Generation (RAG)** system that supports PDFs, images, Excel, text, and URLs. Built with LangChain and FAISS for fast semantic retrieval and Ollama for local LLM inference.
 
-1. Clone the repository:
+---
+
+## Quick summary
+
+Omnisearch-RAG ingests heterogeneous documents, chunks and embeds them, stores vectors in FAISS, and uses a local LLM to perform context-aware question answering (QA). Designed to be modular and production-friendly — great for demonstrations, interviews, and portfolio showcases.
+
+**Highlights**
+
+* Multi-format ingestion: PDF, images (OCR-ready), Excel, plain text, and web pages.
+* Embeddings + FAISS for scalable semantic search.
+* Local LLM support via Ollama (configurable to other LLM endpoints).
+* Clean, modular pipeline: ingestion → embedding → retrieval → generation.
+
+---
+
+## Features
+
+* ✅ Document ingestion & chunking
+* ✅ Embeddings with SentenceTransformers (configurable)
+* ✅ FAISS index for fast similarity search
+* ✅ Context-aware prompt construction for LLM responses
+* ✅ Demo scripts and sample outputs
+
+---
+
+## Prerequisites
+
+* Python 3.9+ (3.10/3.11 recommended)
+* Git
+* Ollama (for local LLMs) or another LLM endpoint if you adapt the project
+* Optional: GPU for faster embeddings / model inference
+
+---
+
+## Clone
+
 ```bash
-git clone https://github.com/omkanekar28/RAG-Implementation.git
-cd RAG-Implementation
+git clone https://github.com/omkanekar28/Omnisearch-RAG.git
+cd Omnisearch-RAG
 ```
 
-2. Create and activate a virtual environment:
+---
+
+## Install
+
+Create and activate a virtual environment:
+
 ```bash
 python3 -m venv venv
-source venv/bin/activate
+source venv/bin/activate   # macOS / Linux
+# venv\Scripts\activate  # Windows (PowerShell)
 ```
 
-3. Install the required packages:
+Install dependencies:
 
-1) If no GPU is available:
 ```bash
+# If no GPU
 pip install -r requirements-cpu.txt
-```
 
-2) If GPU is available:
-```bash
+# If you have a supported GPU
 pip install -r requirements-gpu.txt
 ```
 
-## Usage
+---
 
-1. Make sure Ollama is running with the required models.
+## Configuration
+
+All runtime parameters are in `src/config/config.py`. Configure:
+
+* Paths for input data and output
+* Embedding model and options
+* FAISS index settings
+* Ollama / LLM server address and model names
+
+**Ollama example:**
+
 ```bash
+# Start Ollama and download required models
 ollama serve
+
+# Question-Answering Model
 ollama pull qwen3:1.7b
+
+# Image-Processing Model
 ollama pull qwen3-vl:2b
 ```
 
-2. Configure parameters in src/config/config.py.
+If you plan to use different models, make the necessary changes in config.py
 
-3. Run input_ingestion.py (Converts input files into text-chunks)
+---
+
+## Recommended workflow (end-to-end)
+
+1. **Ingest documents & chunk**
+
 ```bash
 python3 -m src.pipeline.input_ingestion
 ```
 
-4. Run embedding_indexer.py (Converts text-chunks into embeddings + metadata)
+2. **Create embeddings + build FAISS index**
+
 ```bash
 python3 -m src.pipeline.embedding_indexer
 ```
 
-5. Run rag_engine.py (Performs Context-Based-Question-Answering)
+3. **Run RAG engine: query + generate answers**
+
 ```bash
 python3 -m src.pipeline.rag_engine
 ```
 
-### NOTE:- Make sure you uncomment the main function in each of the above files before running them for end-to-end execution.
+> **Note:** Uncomment the `main()` in those files if you have commented them out for development.
+
+---
+
 
 ## Demos
-Links to demo videos showcasing the functionality of the system can be found in demos.txt.
+
+Demo links can be found in `demos.txt`.
