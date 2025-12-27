@@ -327,7 +327,7 @@ class IngestionPipeline:
 #         min_chunk_chars=MIN_CHUNK_CHARS
 #     )
 
-#     dir_path = "data/testing"
+#     dir_path = "data/Programming-Notes"
 #     import os
 #     inputs = [os.path.join(dir_path, fname) for fname in os.listdir(dir_path)]
 #     results = pipeline(inputs=inputs)

@@ -270,5 +270,19 @@ class RAGEngine:
 #         top_k=TOP_K
 #     )
 
-#     answer = rag.perform_question_answering("")
-#     print(f"Answer: {answer}")
+#     question_answer_mappings = {
+#         "Explain data structures in Python.": "",
+#         "What are the advantages of C?": "",
+#         "What is HTML primarily used for?": "",
+#         "When to use MySQL vs MongoDB?": "",
+#         "Explain how Artificial Intelligence, Machine Learning, and Deep Learning are related.": ""
+#     }
+
+#     for question in question_answer_mappings.keys():
+#         answer = rag.perform_question_answering(question)
+#         question_answer_mappings[question] = answer
+    
+#     print("\n\n******************** QUESTION ANSWERING RESULTS ********************")
+#     for question, answer in question_answer_mappings.items():
+#         print(f"\t- Q: {question}\nA: {answer}\n\n")
+#     print("********************************************************************")
