@@ -21,7 +21,7 @@ class BaseImageProcessor(ABC):
     def __init__(self, model_handler: OllamaHandler) -> None:
         """Initializes the valid image extensions"""
         self.model_handler = model_handler
-        self.valid_extensions = {".png", ".jpg", ".jpeg", ".bmp", ".gif", ".tiff"}
+        self.valid_extensions = {".png", ".jpg", ".jpeg", ".bmp", ".gif", ".tiff", ".webp"}
     
     def validate_image_file(self, filepath: str) -> None:
         """Validates if the given file exists and is an image"""

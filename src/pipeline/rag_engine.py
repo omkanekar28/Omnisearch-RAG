@@ -24,7 +24,7 @@ class RAGEngine:
         ollama_handler: OllamaHandler,
         embedding_model: str = "sentence-transformers/all-mpnet-base-v2",
         distance_threshold: float = 1.5,
-        top_k: int = 5
+        top_k: int = 10
     ) -> None:
         """
         Initializes the RAG engine.
@@ -206,7 +206,7 @@ class RAGEngine:
             The constructed QA prompt
         """
         messages = [
-            SystemMessage(content="You are an AI assistant that provides answers based on the given context. Return only the answer without any additional commentary."),
+            SystemMessage(content="You are an AI assistant that provides answers based on the given context. Return only the answer without any additional commentary. If answer is not found in the context, respond accordingly."),
             HumanMessage(content=f"Context:\n{context}\n\nQuestion: {question}")
         ]
         return messages
@@ -270,5 +270,5 @@ class RAGEngine:
 #         top_k=TOP_K
 #     )
 
-#     answer = rag.perform_question_answering("What was OM AUDUMBAR SHET KANEKAR's Overall Percentile in CAT 2024?")
+#     answer = rag.perform_question_answering("")
 #     print(f"Answer: {answer}")

@@ -41,7 +41,7 @@ RAG_TEMPERATURE: float = 0.7
 RAG_NUM_PREDICT: int = 2048
 RAG_OLLAMA_REASONING: bool = True
 DISTANCE_THRESHOLD: float = 1.0
-TOP_K: int = 5
+TOP_K: int = 10
 
 ###################################################################################
 #                                   VECTOR STORE                                  #
